@@ -3,6 +3,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:app_settings/app_settings.dart';
 import 'package:provider/provider.dart';
 import 'package:weathery/application_state.dart';
+import 'package:weathery/services/weather_service.dart';
+import 'package:geocoding/geocoding.dart';
 
 class WeatherTab extends StatefulWidget {
   const WeatherTab({super.key});
@@ -49,7 +51,7 @@ class _WeatherTabState extends State<WeatherTab> {
                 Text(
                   state.positionString,
                   style: TextStyle(
-                    fontSize: 35
+                    fontSize: 28
                   ),
                 ),
                 Text(
@@ -102,5 +104,13 @@ class _WeatherTabState extends State<WeatherTab> {
 
     Position pos = await Geolocator.getCurrentPosition();
     state.setPosition(pos);
+
+    List<Placemark> placemarks = await placemarkFromCoordinates(pos.latitude, pos.longitude);
+    if (placemarks.isNotEmpty) {
+      Placemark place = placemarks[0];
+      state.setPositionString('${place.locality}, ${place.administrativeArea}');
+    }
+    Map<String, dynamic> resp = await state.weatherService.getCurrentData(pos.latitude, pos.longitude, Units.metric);
+    state.setTemperature(resp['main']['temp'].toInt());
   }
 }
