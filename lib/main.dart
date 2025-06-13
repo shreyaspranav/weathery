@@ -1,11 +1,19 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:weathery/tabs/news.dart';
 import 'package:weathery/tabs/weather.dart';
+import 'package:weathery/application_state.dart';
+import 'package:provider/provider.dart';
 
 void main() {
-  runApp(const Weathery());
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => ApplicationState(),
+      child: Weathery(),
+    )
+  );
 }
 
 class Weathery extends StatelessWidget {
@@ -14,6 +22,7 @@ class Weathery extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
+    // SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     return MaterialApp(
       title: 'Flutter Demo',
       home: const HomePage(),
@@ -35,6 +44,7 @@ class _HomePageState extends State<HomePage> {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
+        extendBodyBehindAppBar: true,
         backgroundColor: Colors.white,
         body: Stack(
           children: [
