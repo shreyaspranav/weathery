@@ -12,7 +12,15 @@ class ApplicationState with ChangeNotifier{
 
   // Default location parameters
   String positionString = "New Delhi, Delhi";
-  int temperature = 20;
+
+  // Weather data:
+  String weather = "Clouds";
+  String weatherDescription = "Few Clouds";
+  String iconId = "02d";
+  
+  int temperature = 20;  // Celcius
+  int pressure = 1000;   // hPa
+  int humidity = 80;     // Relative humidity
 
   void setPosition(Position p) {
     position = p;
@@ -25,8 +33,38 @@ class ApplicationState with ChangeNotifier{
     notifyListeners();
   }
 
+
+  void setWeather(String w) {
+    weather = w;
+    notifyListeners();
+  }
+
+  void setWeatherDescription(String w) {
+    weatherDescription = w;
+    notifyListeners();
+  }
+
+  void setWeatherIconId(String id) {
+    iconId = id;
+    notifyListeners();
+  }
+
+  String getCurrentIconUrl() {
+    return 'https://openweathermap.org/img/wn/$iconId@4x.png';
+  }
+
   void setTemperature(int temp) {
     temperature = temp;
+    notifyListeners();
+  }
+
+  void setPressure(int p) {
+    pressure = p;
+    notifyListeners();
+  }
+
+  void setHumidity(int h) {
+    humidity = h;
     notifyListeners();
   }
 

@@ -35,8 +35,8 @@ class _WeatherTabState extends State<WeatherTab> {
       body: CustomScrollView(
         slivers: [
           SliverAppBar.large(
-            expandedHeight: 600,
-            collapsedHeight: 200,
+            expandedHeight: 500,
+            collapsedHeight: 500,
             centerTitle: true,
 
             floating: false,
@@ -59,19 +59,117 @@ class _WeatherTabState extends State<WeatherTab> {
                   style: TextStyle(
                     fontSize: 70
                   ),
+                ),
+                Image.network(
+                  state.getCurrentIconUrl(),
+                  width: 200,
+                  height: 200,
+                ),
+                Text(
+                  state.weatherDescription,
+                  style: TextStyle(
+                    fontSize: 22
+                  ),
                 )
               ],
             )
           ),
 
-
           SliverToBoxAdapter(
             child: Column(
               children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // lowest = 950 highest = 1080 
+                    iconTextContainer(175, 175, "Pressure", "", "mPa", state.pressure, (state.pressure - 950) / (1080 - 950), true, Colors.orange),
+                    iconTextContainer(175, 175, "Humidity", "%", "Lorem", state.humidity, state.humidity / 100.0, false, Colors.lightBlue)
+                  ],
+                ),
               ],
             ),
           )
         ],
+      ),
+    );
+  }
+
+  Widget iconTextContainer(double width, double height, String title, String unit, String footer, int value, double progressValue, bool circular, Color accent) {
+    return ClipRRect(
+      borderRadius: BorderRadiusGeometry.circular(20),
+      child: SizedBox(
+        width: width,
+        height: height,
+        child: Container(
+          color: Colors.black.withAlpha(25),
+          child: Padding(
+            padding: const EdgeInsets.all(15),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 20
+                  ),
+                ),
+                SizedBox(
+                  height: 20,
+                ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              value.toString(),
+                              style: TextStyle(
+                                fontSize: 30
+                              ),
+                            ),
+                            Column(
+                              children: [
+                                Padding(padding: EdgeInsetsGeometry.only(top: 10)),
+                                Text(unit),
+                              ],
+                            )
+                          ],
+                        ),
+                        Text(footer)
+                      ],
+                    ),
+                    circular ? CircularProgressIndicator(
+                      value: progressValue,
+                      strokeCap: StrokeCap.round,
+                      color: accent,
+                      strokeWidth: 8,
+                      backgroundColor: Colors.black.withAlpha(30),
+                    ) : 
+                    SizedBox(
+                      width: 15,
+                      height: 50,
+                      child: RotatedBox(
+                        quarterTurns: -1,
+                        child: LinearProgressIndicator(        
+                          value: progressValue,
+                          borderRadius: BorderRadius.all(Radius.circular(8)),
+                          color: accent,
+                          backgroundColor: Colors.black.withAlpha(30),
+                        ),
+                      ),
+                    )
+                  ],
+                )
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -99,7 +197,6 @@ class _WeatherTabState extends State<WeatherTab> {
           ],
         )
       );
-      return;
     }
 
     Position pos = await Geolocator.getCurrentPosition();
@@ -111,6 +208,21 @@ class _WeatherTabState extends State<WeatherTab> {
       state.setPositionString('${place.locality}, ${place.administrativeArea}');
     }
     Map<String, dynamic> resp = await state.weatherService.getCurrentData(pos.latitude, pos.longitude, Units.metric);
-    state.setTemperature(resp['main']['temp'].toInt());
+
+    // Set the responded data to the Application State
+    state.setWeather(resp['weather'][0]['main']);
+    state.setWeatherDescription(capitalizeEachWord(resp['weather'][0]['description']));
+    state.setWeatherIconId(resp['weather'][0]['icon']);
+
+    state.setTemperature(resp['main']['temp'].round());
+    state.setPressure(resp['main']['pressure'].round());
+    state.setHumidity(resp['main']['humidity'].round());
+  }
+
+  String capitalizeEachWord(String input) {
+    return input.split(' ').map((word) {
+      if (word.isEmpty) return word;
+      return word[0].toUpperCase() + word.substring(1).toLowerCase();
+    }).join(' ');
   }
 }
