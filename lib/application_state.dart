@@ -18,9 +18,14 @@ class ApplicationState with ChangeNotifier{
   String weatherDescription = "Few Clouds";
   String iconId = "02d";
   
-  int temperature = 20;  // Celcius
-  int pressure = 1000;   // hPa
-  int humidity = 80;     // Relative humidity
+  int temperature = 20;        // Celcius
+  int pressure = 1000;         // hPa
+  int humidity = 80;           // Relative humidity
+
+  double windSpeed = 2.0;      // kmph
+  int windDirection = 0;  // degrees from N
+
+  int cloudiness = 10;         // %
 
   void setPosition(Position p) {
     position = p;
@@ -65,6 +70,21 @@ class ApplicationState with ChangeNotifier{
 
   void setHumidity(int h) {
     humidity = h;
+    notifyListeners();
+  }
+
+  void setWindSpeed(double s) {
+    windSpeed = s;
+    notifyListeners();
+  }
+
+  void setWindDirection(int d) {
+    windDirection = d;
+    notifyListeners();
+  }
+
+  void setCloudiness(int c) {
+    cloudiness = c;
     notifyListeners();
   }
 
