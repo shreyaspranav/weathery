@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:app_settings/app_settings.dart';
 import 'package:provider/provider.dart';
 import 'package:weathery/application_state.dart';
 import 'package:weathery/services/weather_service.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class WeatherTab extends StatefulWidget {
   const WeatherTab({super.key});
@@ -275,52 +276,58 @@ class _WeatherTabState extends State<WeatherTab> {
 
   // Location related functions: -------------------------------------------------------------------------------------------
   void _getLocationInfo(BuildContext context, ApplicationState state) async {
-    bool enabled = await Geolocator.isLocationServiceEnabled();
-    if(!enabled) {
-      showDialog(
-        context: context, 
-        barrierDismissible: false,
-        
-        builder: (_) => AlertDialog(
-          title: Text("Location"),
-          content: Text("Enable location services to determine your location"),
+    PermissionStatus status = await Permission.location.request();
+    if(status.isGranted) {
+      bool enabled = await Geolocator.isLocationServiceEnabled();
+      if(!enabled) {
+        showDialog(
+          context: context, 
+          barrierDismissible: false,
           
-          actions: [
-            TextButton(
-              onPressed: () {
-                AppSettings.openAppSettings(type: AppSettingsType.location);
-                Navigator.of(context).pop();
-              },
-              child: Text("Enable Location")
-            )
-          ],
-        )
-      );
+          builder: (_) => AlertDialog(
+            title: Text("Location"),
+            content: Text("Enable location services to determine your location"),
+            
+            actions: [
+              TextButton(
+                onPressed: () {
+                  AppSettings.openAppSettings(type: AppSettingsType.location);
+                  Navigator.of(context).pop();
+                },
+                child: Text("Enable Location")
+              )
+            ],
+          )
+        );
+      }
+
+      Position pos = await Geolocator.getCurrentPosition();
+      state.setPosition(pos);
+
+      List<Placemark> placemarks = await placemarkFromCoordinates(pos.latitude, pos.longitude);
+      if (placemarks.isNotEmpty) {
+        Placemark place = placemarks[0];
+        state.setPositionString('${place.locality}, ${place.administrativeArea}');
+      }
+      Map<String, dynamic> resp = await state.weatherService.getCurrentData(pos.latitude, pos.longitude, Units.metric);
+
+      // Set the responded data to the Application State
+      state.setWeather(resp['weather'][0]['main']);
+      state.setWeatherDescription(capitalizeEachWord(resp['weather'][0]['description']));
+      state.setWeatherIconId(resp['weather'][0]['icon']);
+
+      state.setTemperature(resp['main']['temp'].round());
+      state.setPressure(resp['main']['pressure'].round());
+      state.setHumidity(resp['main']['humidity'].round());
+
+      state.setWindSpeed(resp['wind']['speed']);
+      state.setWindDirection(resp['wind']['deg']);
+
+      state.setCloudiness(resp['clouds']['all'].round());
     }
-
-    Position pos = await Geolocator.getCurrentPosition();
-    state.setPosition(pos);
-
-    List<Placemark> placemarks = await placemarkFromCoordinates(pos.latitude, pos.longitude);
-    if (placemarks.isNotEmpty) {
-      Placemark place = placemarks[0];
-      state.setPositionString('${place.locality}, ${place.administrativeArea}');
+    else {
+      // TODO: Proper handling?
     }
-    Map<String, dynamic> resp = await state.weatherService.getCurrentData(pos.latitude, pos.longitude, Units.metric);
-
-    // Set the responded data to the Application State
-    state.setWeather(resp['weather'][0]['main']);
-    state.setWeatherDescription(capitalizeEachWord(resp['weather'][0]['description']));
-    state.setWeatherIconId(resp['weather'][0]['icon']);
-
-    state.setTemperature(resp['main']['temp'].round());
-    state.setPressure(resp['main']['pressure'].round());
-    state.setHumidity(resp['main']['humidity'].round());
-
-    state.setWindSpeed(resp['wind']['speed']);
-    state.setWindDirection(resp['wind']['deg']);
-
-    state.setCloudiness(resp['clouds']['all'].round());
   }
 
   // Misc Helper functions: ------------------------------------------------------------------------------------------------------
